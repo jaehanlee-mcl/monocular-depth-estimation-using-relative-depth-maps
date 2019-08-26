@@ -54,23 +54,12 @@ GLOBAL_DECODER08_OUTPUT_CHANNEL_REDUCED = 025;
 if ~exist('imset')
     load('dataset/nyu_depth_v2_labeled.mat', 'images')
     load('dataset/nyu_depth_v2_labeled.mat', 'depths')
-    load('dataset/splits.mat', 'testNdxs')
-    imset = images(45:471, 41:601, :, testNdxs);
-    gtset = depths(45:471, 41:601, testNdxs);
+    load('dataset/splits.mat', 'testNdxs', 'trainNdxs')
+    imset_test = images(45:471, 41:601, :, testNdxs);
+    gtset_test = depths(45:471, 41:601, testNdxs);
+    imset_train = images(45:471, 41:601, :, trainNdxs);
+    gtset_train = depths(45:471, 41:601, trainNdxs);
     clear images; clear depths; clear testNdxs;
-    
-    gtset_01 = exp(imresize(imresize(log(gtset),[064 064],'lanczos3'), [GLOBAL_DECODER01_OUTPUT_HEIGHT, GLOBAL_DECODER01_OUTPUT_WIDTH], 'box'));
-    gtset_02_temp = exp(imresize(imresize(log(gtset),[064 064],'lanczos3'), [GLOBAL_DECODER02_OUTPUT_HEIGHT, GLOBAL_DECODER02_OUTPUT_WIDTH], 'box'));
-    gtset_04_temp = exp(imresize(imresize(log(gtset),[064 064],'lanczos3'), [GLOBAL_DECODER04_OUTPUT_HEIGHT, GLOBAL_DECODER04_OUTPUT_WIDTH], 'box'));
-    gtset_06_temp = exp(imresize(imresize(log(gtset),[064 064],'lanczos3'), [GLOBAL_DECODER06_OUTPUT_HEIGHT, GLOBAL_DECODER06_OUTPUT_WIDTH], 'box'));
-    gtset_08_temp = exp(imresize(imresize(log(gtset),[064 064],'lanczos3'), [GLOBAL_DECODER08_OUTPUT_HEIGHT, GLOBAL_DECODER08_OUTPUT_WIDTH], 'box'));
-    for index = 1 : 654
-        gtset_01_label(:,:,:,index) = ch068_labeling(gtset_01(:,:,index));
-        gtset_02(:,:,:,index) = relative_labeling_v1_part(gtset_02_temp(:,:,index));
-        gtset_04(:,:,:,index) = relative_labeling_v2_part(gtset_04_temp(:,:,index));
-        gtset_06(:,:,:,index) = relative_labeling_v3_part(gtset_06_temp(:,:,index));
-        gtset_08(:,:,:,index) = relative_labeling_v4_part(gtset_08_temp(:,:,index));
-    end
 end
 
 % test
@@ -112,66 +101,77 @@ net.blobs('label_064_064_ch1000').reshape(data_sz);
 
 net.forward_prefilled;
 
-%% Space for prediction
-modelre_01 = zeros( GLOBAL_DECODER01_OUTPUT_HEIGHT, GLOBAL_DECODER01_OUTPUT_WIDTH, 654 );
-modelre_02 = zeros( GLOBAL_DECODER02_OUTPUT_HEIGHT, GLOBAL_DECODER02_OUTPUT_WIDTH, GLOBAL_DECODER02_OUTPUT_CHANNEL_REDUCED, 654 );
-modelre_04 = zeros( GLOBAL_DECODER04_OUTPUT_HEIGHT, GLOBAL_DECODER04_OUTPUT_WIDTH, GLOBAL_DECODER04_OUTPUT_CHANNEL_REDUCED, 654 );
-modelre_06 = zeros( GLOBAL_DECODER06_OUTPUT_HEIGHT, GLOBAL_DECODER06_OUTPUT_WIDTH, GLOBAL_DECODER06_OUTPUT_CHANNEL_REDUCED, 654 );
-modelre_08 = zeros( GLOBAL_DECODER08_OUTPUT_HEIGHT, GLOBAL_DECODER08_OUTPUT_WIDTH, GLOBAL_DECODER08_OUTPUT_CHANNEL_REDUCED, 654 );
+for data_train_test = [0,1]
+    
+    %% image setting
+    if data_train_test == 0
+        data_class = 'train';
+        data_num = 795;
+        % image RGB -> BGR
+        imset2 = double(imset_train(:,:,[3 2 1],:));
+    elseif data_train_test == 1
+        data_class = 'test';
+        data_num = 654;
+        % image RGB -> BGR
+        imset2 = double(imset_test(:,:,[3 2 1],:));
+    end
+    % image subtract mean value
+    imset2(:,:,1,:) = imset2(:,:,1,:) - 104;
+    imset2(:,:,2,:) = imset2(:,:,2,:) - 117;
+    imset2(:,:,3,:) = imset2(:,:,3,:) - 123;
+    
+    %% Space for prediction
+    modelre_01 = zeros( GLOBAL_DECODER01_OUTPUT_HEIGHT, GLOBAL_DECODER01_OUTPUT_WIDTH, data_num );
+    modelre_02 = zeros( GLOBAL_DECODER02_OUTPUT_HEIGHT, GLOBAL_DECODER02_OUTPUT_WIDTH, GLOBAL_DECODER02_OUTPUT_CHANNEL_REDUCED, data_num );
+    modelre_04 = zeros( GLOBAL_DECODER04_OUTPUT_HEIGHT, GLOBAL_DECODER04_OUTPUT_WIDTH, GLOBAL_DECODER04_OUTPUT_CHANNEL_REDUCED, data_num );
+    modelre_06 = zeros( GLOBAL_DECODER06_OUTPUT_HEIGHT, GLOBAL_DECODER06_OUTPUT_WIDTH, GLOBAL_DECODER06_OUTPUT_CHANNEL_REDUCED, data_num );
+    modelre_08 = zeros( GLOBAL_DECODER08_OUTPUT_HEIGHT, GLOBAL_DECODER08_OUTPUT_WIDTH, GLOBAL_DECODER08_OUTPUT_CHANNEL_REDUCED, data_num );
 
-%% image setting
-% image RGB -> BGR
-imset2 = double(imset(:,:,[3 2 1],:));
-% image subtract mean value
-imset2(:,:,1,:) = imset2(:,:,1,:) - 104;
-imset2(:,:,2,:) = imset2(:,:,2,:) - 117;
-imset2(:,:,3,:) = imset2(:,:,3,:) - 123;
-
-%% Prediction step
-disp('Prediction Start')
-tic
-im = zeros(size(imset2,1), size(imset2,2), size(imset2,3), GLOBAL_BATCH_SIZE);
-for fInd = 1 : GLOBAL_BATCH_SIZE : 654
-    
-    fInd_start = fInd;
-    fInd_end = min(fInd + (GLOBAL_BATCH_SIZE-1), 654);
-    im(:, :, :, 1 : fInd_end-fInd_start+1) = imset2(:,:,:,fInd_start:fInd_end);
-    
-    %% Result
-    % encoder
-    net.blobs(GLOBAL_ENCODER_INPUT_NAME).set_data( single( permute( imresize(im, [GLOBAL_ENCODER_INPUT_HEIGHT GLOBAL_ENCODER_INPUT_WIDTH]), [2 1 3 4] ) ) );
-    net.forward_prefilled;
-    
-    pred_01_label = permute(net.blobs(GLOBAL_DECODER01_OUTPUT_NAME).get_data, [2 1 3 4]);
-    pred_02_label = permute(net.blobs(GLOBAL_DECODER02_OUTPUT_NAME).get_data, [2 1 3 4]);
-    pred_04_label = permute(net.blobs(GLOBAL_DECODER04_OUTPUT_NAME).get_data, [2 1 3 4]);
-    pred_06_label = permute(net.blobs(GLOBAL_DECODER06_OUTPUT_NAME).get_data, [2 1 3 4]);
-    pred_08_label = permute(net.blobs(GLOBAL_DECODER08_OUTPUT_NAME).get_data, [2 1 3 4]);
-    
-    for index_batch = fInd_start : fInd_end
-        pred_01 = ch068_labeling_inv(round(pred_01_label(:, :, :, index_batch-fInd_start+1)));
-        modelre_01(:,:,index_batch) = pred_01;
+    %% Prediction step
+    disp('Prediction Start')
+    tic
+    im = zeros(size(imset2,1), size(imset2,2), size(imset2,3), GLOBAL_BATCH_SIZE);
+    for fInd = 1 : GLOBAL_BATCH_SIZE : data_num
         
-        pred_02 = relative_labeling_v1_inv(round(pred_02_label(:, :, :, index_batch-fInd_start+1)));
-        modelre_02(:, :, :, index_batch) = pred_02;
+        fInd_start = fInd;
+        fInd_end = min(fInd + (GLOBAL_BATCH_SIZE-1), data_num);
+        im(:, :, :, 1 : fInd_end-fInd_start+1) = imset2(:,:,:,fInd_start:fInd_end);
         
-        pred_04 = relative_labeling_v2_inv(round(pred_04_label(:, :, :, index_batch-fInd_start+1)));
-        modelre_04(:, :, :, index_batch) = pred_04;
+        %% Result
+        % encoder
+        net.blobs(GLOBAL_ENCODER_INPUT_NAME).set_data( single( permute( imresize(im, [GLOBAL_ENCODER_INPUT_HEIGHT GLOBAL_ENCODER_INPUT_WIDTH]), [2 1 3 4] ) ) );
+        net.forward_prefilled;
         
-        pred_06 = relative_labeling_v3_inv(round(pred_06_label(:, :, :, index_batch-fInd_start+1)));
-        modelre_06(:, :, :, index_batch) = pred_06;
+        pred_01_label = permute(net.blobs(GLOBAL_DECODER01_OUTPUT_NAME).get_data, [2 1 3 4]);
+        pred_02_label = permute(net.blobs(GLOBAL_DECODER02_OUTPUT_NAME).get_data, [2 1 3 4]);
+        pred_04_label = permute(net.blobs(GLOBAL_DECODER04_OUTPUT_NAME).get_data, [2 1 3 4]);
+        pred_06_label = permute(net.blobs(GLOBAL_DECODER06_OUTPUT_NAME).get_data, [2 1 3 4]);
+        pred_08_label = permute(net.blobs(GLOBAL_DECODER08_OUTPUT_NAME).get_data, [2 1 3 4]);
         
-        pred_08 = relative_labeling_v4_inv(round(pred_08_label(:, :, :, index_batch-fInd_start+1)));
-        modelre_08(:, :, :, index_batch) = pred_08;
+        for index_batch = fInd_start : fInd_end
+            pred_01 = ch068_labeling_inv(round(pred_01_label(:, :, :, index_batch-fInd_start+1)));
+            modelre_01(:,:,index_batch) = pred_01;
+            
+            pred_02 = relative_labeling_v1_inv(round(pred_02_label(:, :, :, index_batch-fInd_start+1)));
+            modelre_02(:, :, :, index_batch) = pred_02;
+            
+            pred_04 = relative_labeling_v2_inv(round(pred_04_label(:, :, :, index_batch-fInd_start+1)));
+            modelre_04(:, :, :, index_batch) = pred_04;
+            
+            pred_06 = relative_labeling_v3_inv(round(pred_06_label(:, :, :, index_batch-fInd_start+1)));
+            modelre_06(:, :, :, index_batch) = pred_06;
+            
+            pred_08 = relative_labeling_v4_inv(round(pred_08_label(:, :, :, index_batch-fInd_start+1)));
+            modelre_08(:, :, :, index_batch) = pred_08;
+        end
+        
+        disp(num2str(fInd))
+        toc
     end
     
-    
-    disp(num2str(fInd))
-    toc
+    mkdir(['results']);
+    save(['results/default_mode_results_', data_class, '.mat'], ...
+        'modelre_01', 'modelre_02', 'modelre_04', 'modelre_06', 'modelre_08', '-v7.3');
 end
-
-mkdir(['results']);
-save(['results/default_mode_results.mat'], ...
-    'modelre_01', 'modelre_02', 'modelre_04', 'modelre_06', 'modelre_08', '-v7.3');
 
 caffe.reset_all
