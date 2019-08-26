@@ -81,7 +81,7 @@ end
 
 %% Encoder
 net_name = ['models/', 'default_mode_net', '.prototxt'];
-model_name = ['Snapshot/default_mode_net/default_mode_net.caffemodel'];
+model_name = ['Snapshot/default_mode_net.caffemodel'];
 net = caffe.get_net(net_name, 'test');
 net.copy_from(model_name);
 
@@ -170,8 +170,8 @@ for fInd = 1 : GLOBAL_BATCH_SIZE : 654
     toc
 end
 
-mkdir(['results/default_mode_net']);
-save(['results/default_mode_net/default_mode_results.mat'], ...
+mkdir(['results']);
+save(['results/default_mode_results.mat'], ...
     'modelre_01', 'modelre_02', 'modelre_04', 'modelre_06', 'modelre_08', '-v7.3');
 
 caffe.reset_all
