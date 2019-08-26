@@ -170,14 +170,8 @@ for fInd = 1 : GLOBAL_BATCH_SIZE : 654
     toc
 end
 
-scorere_01 = error_metrics_full( double(modelre_01), gtset_01, (gtset_01>0) );
-scorere_02 = error_metrics_full( double(modelre_02), gtset_02, ones( size( gtset_02 ) ) )
-scorere_04 = error_metrics_full( double(modelre_04), gtset_04, ones( size( gtset_04 ) ) )
-scorere_06 = error_metrics_full( double(modelre_06), gtset_06, ones( size( gtset_06 ) ) )
-scorere_08 = error_metrics_full( double(modelre_08), gtset_08, ones( size( gtset_08 ) ) )
-
 mkdir(['results/default_mode_net']);
 save(['results/default_mode_net/default_mode_results.mat'], ...
-    'modelre_01', 'modelre_02', 'modelre_04', 'modelre_06', 'modelre_08');
+    'modelre_01', 'modelre_02', 'modelre_04', 'modelre_06', 'modelre_08', '-v7.3');
 
 caffe.reset_all
