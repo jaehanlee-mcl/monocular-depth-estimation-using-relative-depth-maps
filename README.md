@@ -1,1 +1,1 @@
-# monocular-depth-estimation-using-relative-depth-maps
+# Monocular Depth Estimation using Relative Depth Maps
