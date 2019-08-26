@@ -1,5 +1,5 @@
 # [CVPR 2019] Monocular Depth Estimation Using Relative Depth Maps
-
+![lee2019relativedepth](img/intro.PNG)
 
 ## Paper
 
@@ -8,7 +8,7 @@
 If you use our code or results please cite:
 
 ```
-@inproceedings{lee2019monocular,
+@inproceedings{lee2019relativedepth,
   title={Monocular Depth Estimation Using Relative Depth Maps},
   author={Lee, Jae-Han and Kim, Chang-Su},
   booktitle={Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition},
