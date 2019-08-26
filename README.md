@@ -1,1 +1,1 @@
-# [CVPR2019] Monocular Depth Estimation using Relative Depth Maps
+# [CVPR 2019] Monocular Depth Estimation using Relative Depth Maps
