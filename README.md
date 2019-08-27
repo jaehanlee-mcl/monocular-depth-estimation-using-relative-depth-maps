@@ -7,7 +7,7 @@
 
 [(Supplemental) Monocular Depth Estimation Using Relative Depth Maps](http://openaccess.thecvf.com/content_CVPR_2019/supplemental/Lee_Monocular_Depth_Estimation_CVPR_2019_supplemental.pdf)
 
-If you use our code or results please cite:
+If you use our code or results, please cite:
 
 ```
 @InProceedings{Lee_2019_CVPR,
