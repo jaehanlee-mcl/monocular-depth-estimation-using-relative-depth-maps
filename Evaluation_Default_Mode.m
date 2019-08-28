@@ -121,53 +121,71 @@ for data_train_test = [0,1]
     imset2(:,:,3,:) = imset2(:,:,3,:) - 123;
     
     %% Space for prediction
-    modelre_01 = zeros( GLOBAL_DECODER01_OUTPUT_HEIGHT, GLOBAL_DECODER01_OUTPUT_WIDTH, data_num );
-    modelre_02 = zeros( GLOBAL_DECODER02_OUTPUT_HEIGHT, GLOBAL_DECODER02_OUTPUT_WIDTH, GLOBAL_DECODER02_OUTPUT_CHANNEL_REDUCED, data_num );
-    modelre_04 = zeros( GLOBAL_DECODER04_OUTPUT_HEIGHT, GLOBAL_DECODER04_OUTPUT_WIDTH, GLOBAL_DECODER04_OUTPUT_CHANNEL_REDUCED, data_num );
-    modelre_06 = zeros( GLOBAL_DECODER06_OUTPUT_HEIGHT, GLOBAL_DECODER06_OUTPUT_WIDTH, GLOBAL_DECODER06_OUTPUT_CHANNEL_REDUCED, data_num );
-    modelre_08 = zeros( GLOBAL_DECODER08_OUTPUT_HEIGHT, GLOBAL_DECODER08_OUTPUT_WIDTH, GLOBAL_DECODER08_OUTPUT_CHANNEL_REDUCED, data_num );
+    modelre_01_temp = zeros( GLOBAL_DECODER01_OUTPUT_HEIGHT, GLOBAL_DECODER01_OUTPUT_WIDTH, data_num, 2 );
+    modelre_02_temp = zeros( GLOBAL_DECODER02_OUTPUT_HEIGHT, GLOBAL_DECODER02_OUTPUT_WIDTH, GLOBAL_DECODER02_OUTPUT_CHANNEL_REDUCED, data_num, 2 );
+    modelre_04_temp = zeros( GLOBAL_DECODER04_OUTPUT_HEIGHT, GLOBAL_DECODER04_OUTPUT_WIDTH, GLOBAL_DECODER04_OUTPUT_CHANNEL_REDUCED, data_num, 2 );
+    modelre_06_temp = zeros( GLOBAL_DECODER06_OUTPUT_HEIGHT, GLOBAL_DECODER06_OUTPUT_WIDTH, GLOBAL_DECODER06_OUTPUT_CHANNEL_REDUCED, data_num, 2 );
+    modelre_08_temp = zeros( GLOBAL_DECODER08_OUTPUT_HEIGHT, GLOBAL_DECODER08_OUTPUT_WIDTH, GLOBAL_DECODER08_OUTPUT_CHANNEL_REDUCED, data_num, 2 );
 
     %% Prediction step
     disp('Prediction Start')
     tic
-    im = zeros(size(imset2,1), size(imset2,2), size(imset2,3), GLOBAL_BATCH_SIZE);
-    for fInd = 1 : GLOBAL_BATCH_SIZE : data_num
-        
-        fInd_start = fInd;
-        fInd_end = min(fInd + (GLOBAL_BATCH_SIZE-1), data_num);
-        im(:, :, :, 1 : fInd_end-fInd_start+1) = imset2(:,:,:,fInd_start:fInd_end);
-        
-        %% Result
-        % encoder
-        net.blobs(GLOBAL_ENCODER_INPUT_NAME).set_data( single( permute( imresize(im, [GLOBAL_ENCODER_INPUT_HEIGHT GLOBAL_ENCODER_INPUT_WIDTH]), [2 1 3 4] ) ) );
-        net.forward_prefilled;
-        
-        pred_01_label = permute(net.blobs(GLOBAL_DECODER01_OUTPUT_NAME).get_data, [2 1 3 4]);
-        pred_02_label = permute(net.blobs(GLOBAL_DECODER02_OUTPUT_NAME).get_data, [2 1 3 4]);
-        pred_04_label = permute(net.blobs(GLOBAL_DECODER04_OUTPUT_NAME).get_data, [2 1 3 4]);
-        pred_06_label = permute(net.blobs(GLOBAL_DECODER06_OUTPUT_NAME).get_data, [2 1 3 4]);
-        pred_08_label = permute(net.blobs(GLOBAL_DECODER08_OUTPUT_NAME).get_data, [2 1 3 4]);
-        
-        for index_batch = fInd_start : fInd_end
-            pred_01 = ch068_labeling_inv(round(pred_01_label(:, :, :, index_batch-fInd_start+1)));
-            modelre_01(:,:,index_batch) = pred_01;
+    for image_flip = 1 : 2
+        im = zeros(size(imset2,1), size(imset2,2), size(imset2,3), GLOBAL_BATCH_SIZE);
+        for fInd = 1 : GLOBAL_BATCH_SIZE : data_num
             
-            pred_02 = relative_labeling_v1_inv(round(pred_02_label(:, :, :, index_batch-fInd_start+1)));
-            modelre_02(:, :, :, index_batch) = pred_02;
+            fInd_start = fInd;
+            fInd_end = min(fInd + (GLOBAL_BATCH_SIZE-1), data_num);
+            if image_flip == 1 % NO-FLIP (left-right)
+                im(:, :, :, 1 : fInd_end-fInd_start+1) = imset2(:,:,:,fInd_start:fInd_end);
+            elseif image_flip == 2 % FLIP (left-right)
+                im(:, :, :, 1 : fInd_end-fInd_start+1) = flip(imset2(:,:,:,fInd_start:fInd_end), 2);
+            end
             
-            pred_04 = relative_labeling_v2_inv(round(pred_04_label(:, :, :, index_batch-fInd_start+1)));
-            modelre_04(:, :, :, index_batch) = pred_04;
+            %% Result
+            % encoder
+            net.blobs(GLOBAL_ENCODER_INPUT_NAME).set_data( single( permute( imresize(im, [GLOBAL_ENCODER_INPUT_HEIGHT GLOBAL_ENCODER_INPUT_WIDTH]), [2 1 3 4] ) ) );
+            net.forward_prefilled;
             
-            pred_06 = relative_labeling_v3_inv(round(pred_06_label(:, :, :, index_batch-fInd_start+1)));
-            modelre_06(:, :, :, index_batch) = pred_06;
+            pred_01_label = permute(net.blobs(GLOBAL_DECODER01_OUTPUT_NAME).get_data, [2 1 3 4]);
+            pred_02_label = permute(net.blobs(GLOBAL_DECODER02_OUTPUT_NAME).get_data, [2 1 3 4]);
+            pred_04_label = permute(net.blobs(GLOBAL_DECODER04_OUTPUT_NAME).get_data, [2 1 3 4]);
+            pred_06_label = permute(net.blobs(GLOBAL_DECODER06_OUTPUT_NAME).get_data, [2 1 3 4]);
+            pred_08_label = permute(net.blobs(GLOBAL_DECODER08_OUTPUT_NAME).get_data, [2 1 3 4]);
             
-            pred_08 = relative_labeling_v4_inv(round(pred_08_label(:, :, :, index_batch-fInd_start+1)));
-            modelre_08(:, :, :, index_batch) = pred_08;
+            for index_batch = fInd_start : fInd_end
+                pred_01 = ch068_labeling_inv(round(pred_01_label(:, :, :, index_batch-fInd_start+1)));
+                pred_02 = relative_labeling_v1_inv(round(pred_02_label(:, :, :, index_batch-fInd_start+1)));
+                pred_04 = relative_labeling_v2_inv(round(pred_04_label(:, :, :, index_batch-fInd_start+1)));
+                pred_06 = relative_labeling_v3_inv(round(pred_06_label(:, :, :, index_batch-fInd_start+1)));
+                pred_08 = relative_labeling_v4_inv(round(pred_08_label(:, :, :, index_batch-fInd_start+1)));
+                
+                if image_flip == 1 % NO-FLIP (left-right)
+                    % PASS
+                elseif image_flip == 2 % NO-FLIP (left-right)
+                    pred_01 = flip(pred_01,2);
+                    pred_02 = reshape(flip(flip(reshape(pred_02, 008,008,008,008),2),4),008,008,008*008);
+                    pred_04 = reshape(flip(flip(reshape(pred_04, 016,016,005,005),2),4),016,016,005*005);
+                    pred_06 = reshape(flip(flip(reshape(pred_06, 032,032,005,005),2),4),032,032,005*005);
+                    pred_08 = reshape(flip(flip(reshape(pred_08, 064,064,005,005),2),4),064,064,005*005);
+                end  
+                
+                modelre_01_temp(:,:,index_batch, image_flip) = pred_01;
+                modelre_02_temp(:, :, :, index_batch, image_flip) = pred_02;
+                modelre_04_temp(:, :, :, index_batch, image_flip) = pred_04;
+                modelre_06_temp(:, :, :, index_batch, image_flip) = pred_06;
+                modelre_08_temp(:, :, :, index_batch, image_flip) = pred_08;
+            end
+            
+            disp(num2str(fInd))
+            toc
         end
-        
-        disp(num2str(fInd))
-        toc
     end
+    modelre_01 = modelre_01_temp(:,:,:,1)/2 + modelre_01_temp(:,:,:,2)/2;
+    modelre_02 = modelre_02_temp(:,:,:,:,1)/2 + modelre_02_temp(:,:,:,:,2)/2;
+    modelre_04 = modelre_04_temp(:,:,:,:,1)/2 + modelre_04_temp(:,:,:,:,2)/2;
+    modelre_06 = modelre_06_temp(:,:,:,:,1)/2 + modelre_06_temp(:,:,:,:,2)/2;
+    modelre_08 = modelre_08_temp(:,:,:,:,1)/2 + modelre_08_temp(:,:,:,:,2)/2;
     
     mkdir(['results']);
     save(['results/default_mode_results_', data_class, '.mat'], ...
