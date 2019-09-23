@@ -23,7 +23,7 @@ If you use our code or results, please cite:
 You can download our trained caffemodel from the following link: [default_mode_net.caffemodel](https://drive.google.com/file/d/1w0BNsQH3hUKVh4pjpmfsryTc77OXlCGB/view?usp=sharing)
 
 ## Dataset
-You should download 'nyu_depth_v2_labeled.mat' and 'splits.mat' files from official NYUv2 site: [data](https://cs.nyu.edu/~silberman/datasets/nyu_depth_v2.html), [splits](https://cs.nyu.edu/~silberman/projects/indoor_scene_seg_sup.html)
+You should download 'nyu_depth_v2_labeled.mat' and 'splits.mat' files from official NYUv2 site: [nyu_depth_v2_labeled.mat](https://cs.nyu.edu/~silberman/datasets/nyu_depth_v2.html), [splits.mat](https://cs.nyu.edu/~silberman/projects/indoor_scene_seg_sup.html)
 
 ## Results
 The results of our algorithm of 654 test images of NYUv2 set are located in 'results/depth_map'.
