@@ -8,14 +8,12 @@
 [(Supplemental) Monocular Depth Estimation Using Relative Depth Maps](http://openaccess.thecvf.com/content_CVPR_2019/supplemental/Lee_Monocular_Depth_Estimation_CVPR_2019_supplemental.pdf)
 
 If you use our code or results, please cite:
-
 ```
-@InProceedings{Lee_2019_CVPR,
-  author = {Lee, Jae-Han and Kim, Chang-Su},
-  title = {Monocular Depth Estimation Using Relative Depth Maps}, 
-  booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
-  month = {June},
-  year = {2019}
+@InProceedings{lee2021dpict,
+  title={DPICT: Deep Progressive Image Compression Using Trit-Planes},
+  author={Lee, Jae-Han and Jeon, Seungmin and Choi, Kwang Pyo and Park, Youngo and Kim, Chang-Su},
+  booktitle={Proceedings of the IEEE/CVF International Conference on Computer Vision},
+  year = {2022}
 }
 ```
 
